@@ -10,6 +10,10 @@ thanks to zeromq. But in the future is intended to implement a backend so you ca
 
 This not supports scheduling with eta or countdown. This simple asynchronous queue/job queue based.
 
+**NOTE**: This project was initially developed within Greenmine_.
+
+.. _Greenmine: https://github.com/niwibe/Green-Mine
+
 Features
 --------
 
