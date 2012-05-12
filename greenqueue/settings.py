@@ -9,5 +9,7 @@ GREENQUEUE_TASK_MODULES = getattr(settings, 'GREENQUEUE_TASK_MODULES', [])
 # Available backends:
 # * greenqueue.backends.zeromq.ZMQService -> for normal async use
 # * greenqueue.backends.sync.SyncService -> for testing this runs on sync mode, no workers needed.
+#
+# By default, sync backend is set.
 
-GREENQUEUE_BACKEND = getattr(settings, 'GREENQUEUE_BACKEND', 'greenqueue.backends.zeromq.ZMQService')
+GREENQUEUE_BACKEND = getattr(settings, 'GREENQUEUE_BACKEND', 'greenqueue.backends.sync.SyncService')

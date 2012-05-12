@@ -20,16 +20,17 @@ setup(
         'versiontools >= 1.9',
     ],
     classifiers = [
-        'Development Status :: 4 - Beta',
-        "Programming Language :: Python",
-        'Operating System :: POSIX',
         'Framework :: Django',
+        'Operating System :: POSIX',
+        'Development Status :: 4 - Beta',
         'License :: OSI Approved :: BSD License',
-        'Topic :: Software Development :: Libraries :: Python Modules',
+        'Topic :: Communications',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: System :: Distributed Computing',
-        'Topic :: Communications',
+        'Topic :: Software Development :: Libraries :: Python Modules',
         'Intended Audience :: Developers',
         'Programming Language :: Python',
+        'Programming Language :: Python :: 2.6',
+        'Programming Language :: Python :: 2.7',
     ]
 )
