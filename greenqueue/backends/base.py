@@ -12,20 +12,7 @@ import logging, os, uuid
 log = logging.getLogger('greenqueue')
 
 
-class BaseClient(object):
-    def __init__(self, lib, storage):
-        self.lib = lib
-        self.storage = storage
-
-    def create_new_uuid(self):
-        return str(uuid.uuid1())
-
-    def send(self, name, args=[], kwargs={}):
-        raise NotImplementedError()
- 
-
 class BaseService(object):
-    client_class = BaseClient
     modules_loaded = False
 
     lib = core.library
@@ -43,6 +30,9 @@ class BaseService(object):
         
     def close(self):
         raise NotImplementedError()
+
+    def create_new_uuid(self):
+        return str(uuid.uuid1())
 
     def validate_message(self, message):
         name = None
@@ -85,10 +75,11 @@ class BaseService(object):
         task_callable = self.get_callable_for_task(_task)
         args, kwargs, uuid = message['args'], message['kwargs'], message['uuid']
         self.process_callable(uuid, task_callable, args, kwargs)
-    
+
     @classmethod
-    def get_client_instance(cls):
+    def instance(cls):
         if not cls.modules_loaded:
-            cls.load_modules()
             cls.modules_loaded = True
-        return cls.client_class(cls.lib, cls.storage)
+            cls.load_modules()
+
+        return cls()

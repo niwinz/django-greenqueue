@@ -83,7 +83,7 @@ class Library(object):
         backend_class = load_class(settings.GREENQUEUE_BACKEND)
 
         # obtain client instance
-        client = backend_class.get_client_instance()
+        client = backend_class.instance()
 
         # send task to workers
         uuid = client.send(name, args, kwargs)
