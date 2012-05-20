@@ -1,2 +1,2 @@
-# -*- coding: utf-8 -*-ç
+# -*- coding: utf-8 -*-
 __version__ = (0, 1, 0, 'final', 0)
