@@ -13,7 +13,8 @@ from .. import settings
 
 
 class ZMQClient(BaseClient):
-    def __init__(self):
+    def __init__(self, lib, storage):
+        super(ZMQClient, self).__init__(lib, storage)
         self.socket_path = settings.GREENQUEUE_BIND_ADDRESS
 
     def send(self, name, args=[], kwargs={}):
