@@ -43,6 +43,16 @@ By default, **greenqueue** uses a **sync** backend (no need any worker, all runs
 , you can run all tasks on separate worker with zeromq backend. 
 
 
+Backends
+--------
+
+Currently, three backends are available:
+
+* ``greenqueue.backends.sync.SyncService`` - Synchronous backend, no worker need.
+* ``greenqueue.backends.zeromq.ZMQService`` - Asynchronous backend with zeromq transport.
+* ``greenqueue.backends.zeromq_gevent.ZMQService`` - Same as above, but spawn tasks in gevent pool. (beta)
+
+
 Settings
 --------
 
@@ -60,7 +70,13 @@ Settings
     Task dispatches and service backend. By default is set ``greenqueue.backends.sync.SyncService``, this is usefull
     for tests, because this does not need any worker.
 
-    For use zeromq and separate worker for task, set this attr to ``greenqueue.backends.zeromq.ZMQService``.
+    For use zeromq and separate worker for task, set this attr to ``greenqueue.backends.zeromq.ZMQService`` or 
+    ``greenqueue.backends.zeromq_gevent.ZMQService``
+
+``GREENQUEUE_BACKEND_POOLSIZE``
+
+    Set a process pool size. At the momment, this settings property is used only with ``zeromq_gevent.ZMQService``
+    backend.
 
 
 Run zeromq worker
