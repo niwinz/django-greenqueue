@@ -57,8 +57,8 @@ class ZMQService(BaseService):
         self.storage.save(uuid, result)
 
     def send(self, name, args=[], kwargs={}):
-        ctx = self.zmq.Context.instance()
-        socket = ctx.socket(self.zmq.PUSH)
+        ctx = self.zmq().Context.instance()
+        socket = ctx.socket(self.zmq().PUSH)
         socket.connect(settings.GREENQUEUE_BIND_ADDRESS)
 
         new_uuid = self.create_new_uuid()
