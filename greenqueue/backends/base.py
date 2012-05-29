@@ -29,9 +29,6 @@ class BaseService(object):
         # load all modules
         self.load_modules()
         
-    def close(self):
-        raise NotImplementedError()
-
     def create_new_uuid(self):
         return str(uuid.uuid1())
 
@@ -66,6 +63,8 @@ class BaseService(object):
         if not ok:
             log.error("greenqueue: ignoring invalid message")
             return
+
+        log.debug("greenqueue: received a valid message: %s", str(message))
         
         try:
             _task = self.lib.task_by_name(name)

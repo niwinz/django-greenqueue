@@ -3,7 +3,7 @@
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.importlib import import_module
 
-import logging, os
+import logging, os, threading
 log = logging.getLogger('greenqueue')
 
 from greenqueue.utils import Singleton
@@ -11,13 +11,9 @@ from greenqueue.utils import Singleton
 from .base import BaseService
 from .. import settings
 
-import threading
-
 
 class ZMQService(BaseService):
-    def __init__(self):
-        super(ZMQService, self).__init__()
-        self.socket = None
+    socket = None
 
     @property
     def zmq(self):
@@ -30,17 +26,14 @@ class ZMQService(BaseService):
         socket = ctx.socket(self.zmq.PULL)
         socket.connect(settings.GREENQUEUE_BIND_ADDRESS)
         
-        log.info("greenqueue: now listening on %s. (pid %s)",
-            settings.GREENQUEUE_BIND_ADDRESS, os.getpid())
-        
+        log.info(u"greenqueue: now connected to {address}. (pid {pid})".format(
+            address = settings.GREENQUEUE_BIND_ADDRESS, 
+            pid = os.getpid()
+        ))
+
         while True:
             message = socket.recv_pyobj()
             self.handle_message(message)
-
-    def close(self):
-        #if self.socket is not None:
-        #    self.socket.close()
-        pass
 
     def create_socket(self):
         ctx = self.zmq.Context.instance()
@@ -49,11 +42,11 @@ class ZMQService(BaseService):
 
     def send(self, name, args=[], kwargs={}):
         new_uuid = self.create_new_uuid()
-
-        with threading.Lock():
-            if self.socket is None:
+        
+        if self.socket is None:
+            with threading.Lock():
                 self.create_socket()
-
+        
         with threading.Lock():
             self.socket.send_pyobj({
                 'name': name, 

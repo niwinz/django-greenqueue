@@ -3,7 +3,7 @@
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.importlib import import_module
 
-import logging, os
+import logging, os, importlib
 log = logging.getLogger('greenqueue')
 
 from greenqueue.utils import Singleton
@@ -21,41 +21,42 @@ class ZMQService(BaseService):
     
     @property
     def zmq(self):
-        return import_module('zmq', 'gevent_zeromq')
+        return importlib.import_module("gevent_zeromq").zmq
 
     def load_gevent_patches(self):
+        # this method not works with django >= 1.4
         if not self.patched:
-            monkey = importlib.import_module('monkey', 'gevent')
+            monkey = importlib.import_module('.monkey', 'gevent')
             monkey.patch_all()
             self.patched = True
 
     def start(self):
         # load all modules
-        self.load_gevent_patches()
+        #self.load_gevent_patches()
         self.load_modules()
 
-        self.pool = importlib.import_module('pool', 'gevent')\
+        self.pool = importlib.import_module('.pool', 'gevent')\
             .Pool(settings.GREENQUEUE_BACKEND_POOLSIZE)
         
         ctx = self.zmq.Context.instance()
         socket = ctx.socket(self.zmq.PULL)
-        socket.bind(settings.GREENQUEUE_BIND_ADDRESS)
+        socket.connect(settings.GREENQUEUE_BIND_ADDRESS)
+        
+        log.info(u"greenqueue: now connected to {address}. (pid {pid})".format(
+            address = settings.GREENQUEUE_BIND_ADDRESS, 
+            pid = os.getpid()
+        ))
 
-        log.info("greenqueue: now listening on %s. (pid %s)",
-            settings.GREENQUEUE_BIND_ADDRESS, os.getpid())
-
-        # recv loop
         while True:
-            message = self.socket.recv_pyobj()
+            message = socket.recv_pyobj()
             self.handle_message(message)
 
-    def close(self):
-        if self.socket is not None:
-            self.socket.close()
-
     def process_callable(self, uuid, _callable, args, kwargs):
-        self.pool.spawn(_callable, *args, **kwargs)
-        self.storage.save(uuid, result)
+        def _greenlet():
+            result = _callable(*args, **kwargs)
+            self.storage.save(uuid, result)
+
+        self.pool.spawn(_greenlet)
 
     def create_socket(self):
         ctx = self.zmq.Context.instance()

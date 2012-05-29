@@ -27,7 +27,14 @@ class Command(BaseCommand):
         gq_settings.GREENQUEUE_BIND_ADDRESS = options['socket']
         service_handler = load_class(gq_settings.GREENQUEUE_BACKEND)()
 
+        verbosity = int(options.get('verbosity'))
+
+        if verbosity > 1:
+            log.setLevel(logging.DEBUG)
+        else:
+            log.setLevel(logging.INFO)
+
         try:
             service_handler.start()
         except KeyboardInterrupt:
-            service_handler.close()
+            pass

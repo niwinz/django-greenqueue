@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 
+"""
+This module is not fully implemented.
+"""
+
+
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.importlib import import_module
 
@@ -53,5 +58,3 @@ class RabbitMQService(BaseService):
             })
 
         return new_uuid
-
-
