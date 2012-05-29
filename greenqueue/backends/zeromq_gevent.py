@@ -18,11 +18,12 @@ class ZMQService(BaseService):
     def __init__(self):
         super(ZMQService, self).__init__()
         self.socket = None
-
+    
+    @property
     def zmq(self):
         return import_module('zmq', 'gevent_zeromq')
 
-    def load_gevent(self):
+    def load_gevent_patches(self):
         if not self.patched:
             monkey = importlib.import_module('monkey', 'gevent')
             monkey.patch_all()
@@ -30,18 +31,18 @@ class ZMQService(BaseService):
 
     def start(self):
         # load all modules
-        self.load_gevent()
+        self.load_gevent_patches()
         self.load_modules()
 
-        self.pool = importlib.import_module('pool', 'gevent').Pool(10)
+        self.pool = importlib.import_module('pool', 'gevent')\
+            .Pool(settings.GREENQUEUE_BACKEND_POOLSIZE)
+        
+        ctx = self.zmq.Context.instance()
+        socket = ctx.socket(self.zmq.PULL)
+        socket.bind(settings.GREENQUEUE_BIND_ADDRESS)
 
-        # bind socket if need
-        if self.socket is None:
-            ctx = self.zmq().Context.instance()
-            self.socket = ctx.socket(self.zmq().PULL)
-            self.socket.bind(settings.GREENQUEUE_BIND_ADDRESS)
-            log.info("greenqueue: now listening on %s. (pid %s)",
-                settings.GREENQUEUE_BIND_ADDRESS, os.getpid())
+        log.info("greenqueue: now listening on %s. (pid %s)",
+            settings.GREENQUEUE_BIND_ADDRESS, os.getpid())
 
         # recv loop
         while True:
@@ -56,14 +57,18 @@ class ZMQService(BaseService):
         self.pool.spawn(_callable, *args, **kwargs)
         self.storage.save(uuid, result)
 
+    def create_socket(self):
+        ctx = self.zmq.Context.instance()
+        self.socket = ctx.socket(self.zmq.PUSH)
+        self.socket.bind(settings.GREENQUEUE_BIND_ADDRESS)
+
     def send(self, name, args=[], kwargs={}):
-        ctx = self.zmq().Context.instance()
-        socket = ctx.socket(self.zmq().PUSH)
-        socket.connect(settings.GREENQUEUE_BIND_ADDRESS)
+        if self.socket is None:
+            self.create_socket()
 
         new_uuid = self.create_new_uuid()
 
-        socket.send_pyobj({
+        self.socket.send_pyobj({
             'name': name, 
             'args': args, 
             'kwargs':kwargs,

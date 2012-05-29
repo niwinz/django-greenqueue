@@ -13,8 +13,9 @@ log = logging.getLogger('greenqueue')
 
 
 class BaseService(object):
-    modules_loaded = False
+    __metaclass__ = Singleton
 
+    modules_loaded = False
     lib = core.library
     storage = get_storage_backend()
 
