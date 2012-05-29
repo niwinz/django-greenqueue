@@ -22,6 +22,12 @@ Features
 * Backend for testing mode.
 * Workos on zeromq push/pull transport mode.
 
+Work in progress
+----------------
+
+* RabbitMQ backend.
+* Tasks by class.
+
 
 How to use it?
 ==============
