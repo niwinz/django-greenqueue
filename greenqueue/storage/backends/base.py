@@ -3,8 +3,11 @@
 from greenqueue.utils import Singleton
 from greenqueue.exceptions import ResultDoesNotExist, TimeoutError
 
+import importlib
+
 class BaseStorageBackend(object):
     __metaclass__ = Singleton
+    _sleep = None
 
     def get(self, uuid, default=None):
         raise NotImplementedError
@@ -22,7 +25,8 @@ class BaseStorageBackend(object):
                 break
             except ResultDoesNotExist:
                 pass
-
+            
+            import time
             time.sleep(interval)
             time_elapsed += interval
 
