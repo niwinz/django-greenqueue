@@ -8,53 +8,116 @@ This module is not fully implemented.
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.importlib import import_module
 
-import logging, os
-log = logging.getLogger('greenqueue')
-
 from .base import BaseService
 from .. import settings
 
+from pika.adapters import SelectConnection
+
+import logging
+import pickle
+import pika
+import os
+
+log = logging.getLogger('greenqueue')
+
 
 class RabbitMQService(BaseService):
-    def __init__(self):
-        super(ZMQService, self).__init__()
+    rabbitmq_parameters = None
+    channel = None
 
-    def start(self):
-        self.load_modules()
+    def _on_connected(self, _connection):
+        log.info("Connected to RabbitMQ")
+        _connection.channel(self._on_channel_opened)
 
-        log.info("greenqueue: now listening on %s. (pid %s)",
-            settings.GREENQUEUE_BIND_ADDRESS, os.getpid())
-        
-        while True:
-            message = socket.recv_pyobj()
-            self.handle_message(message)
-
-    def send(self, name, args=[], kwargs={}):
-        parameters = pika.ConnectionParameters('localhost')
-        connection = pika.BlockingConnection(parameters)
-        channel = connection.channel()
-
-        channel.queue_declare(queue="test", durable=True,
-            exclusive=False, auto_delete=False)
-
-        channel.basic_publish(exchange='',
-            routing_key="test",
-            body="Hello World!",
-            properties=pika.BasicProperties(content_type="text/plain",delivery_mode=1)
+    def _on_channel_opened(self, _channel):
+        self.channel = _channel
+        self.channel.queue_declare(
+            queue = settings.GREENQUEUE_RABBITMQ_QUEUE,
+            durable = True,
+            exclusive = False, 
+            auto_delete = False,
+            callback = self._on_queue_declared
         )
 
+    def _on_queue_declared(self, frame):
+        self.channel.basic_consume(
+            self._handle_delivery, 
+            queue = settings.GREENQUEUE_RABBITMQ_QUEUE,
+        )
+
+    def _handle_delivery(self, channel, method_frame, header_frame, body):
+        self.handle_message(pickle.loads(body))
+        self.channel.basic_ack(delivery_tag=method_frame.delivery_tag)
+    
+    def start(self):
+        self.load_modules()
+        
+        log.info("Starting connection to RabbitMQ.")
+
+        connection = self.create_async_connection()
+        connection.ioloop.start()
+
+    def create_credentials(self):
+        if (settings.GREENQUEUE_RABBITMQ_USERNAME is not None and 
+            settings.GREENQUEUE_RABBITMQ_PASSWORD is not None):
+
+            return pika.PlainCredentials(
+                settings.GREENQUEUE_RABBITMQ_USERNAME,
+                settings.GREENQUEUE_RABBITMQ_PASSWORD
+            )
+
+        return None
+
+    def create_connection_params(self, )
+        if not self.rabbitmq_parameters:
+            creadentials = self.create_credentials()
+
+            params = {
+                'host': settings.GREENQUEUE_RABBITMQ_HOSTNAME,
+                'port': settings.GREENQUEUE_RABBITMQ_PORT, 
+                'virtual_host': settings.GREENQUEUE_RABBITMQ_VHOST,
+            }
+
+            if creadentials:
+                params['credentials'] = creadentials
+
+            self.rabbitmq_parameters = pika.ConnectionParameters(**params)
+
+        return self.rabbitmq_parameters
+
+    def create_blocking_connection(self):
+        return pika.BlockingConnection(self.create_connection_params())
+
+    def create_async_connection(self):
+        return SelectConnection(self.create_connection_params(), self._on_connected)
+
+    def send(self, name, args=[], kwargs={}):
+        connection = self.create_connection()
+        channel = connection.channel()
         new_uuid = self.create_new_uuid()
 
-        with threading.Lock():
-            if self.socket is None:
-                self.create_socket()
+        channel.queue_declare(
+            queue = settings.GREENQUEUE_RABBITMQ_QUEUE, 
+            durable = True,
+            exclusive = False, 
+            auto_delete = False
+        )
 
-        with threading.Lock():
-            self.socket.send_pyobj({
-                'name': name, 
-                'args': args, 
-                'kwargs':kwargs,
-                'uuid': new_uuid,
-            })
+        message = {
+            'name': name, 
+            'args': args, 
+            'kwargs':kwargs,
+            'uuid': new_uuid,
+        }
+
+        channel.basic_publish(
+            exchange = settings.GREENQUEUE_RABBITMQ_EXCHANGE,
+            routing_key = settings.GREENQUEUE_RABBITMQ_ROUTING_KEY,
+            body = pickle.dumps(message),
+            properties=pika.BasicProperties(
+                content_type="application/octet-stream",
+                delivery_mode=1
+            )
+        )
 
         return new_uuid
