@@ -9,6 +9,7 @@ GREENQUEUE_TASK_MODULES = getattr(settings, 'GREENQUEUE_TASK_MODULES', [])
 # Available backends:
 # * greenqueue.backends.zeromq.ZMQService -> for normal async use
 # * greenqueue.backends.sync.SyncService -> for testing this runs on sync mode, no workers needed.
+# * greenqueue.backends.rabbitmq.RabbitMQService
 #
 # By default, sync backend is set.
 
@@ -24,5 +25,6 @@ GREENQUEUE_RABBITMQ_HOSTNAME = getattr(settings, 'GREENQUEUE_RABBITMQ_HOSTNAME',
 GREENQUEUE_RABBITMQ_PORT = getattr(settings, 'GREENQUEUE_RABBITMQ_PORT', 5672)
 GREENQUEUE_RABBITMQ_VHOST = getattr(settings, 'GREENQUEUE_RABBITMQ_VHOST', '/')
 GREENQUEUE_RABBITMQ_QUEUE = getattr(settings, 'GREENQUEUE_RABBITMQ_QUEUE', 'greenqueue')
-GREENQUEUE_RABBITMQ_ROUTING_KEY = getattr(settings, 'GREENQUEUE_RABBITMQ_ROUTING_KEY', 'greenqueue.rk')
+GREENQUEUE_RABBITMQ_ROUTING_KEY = getattr(settings, 'GREENQUEUE_RABBITMQ_ROUTING_KEY',
+                                                                GREENQUEUE_RABBITMQ_QUEUE)
 GREENQUEUE_RABBITMQ_EXCHANGE = getattr(settings, 'GREENQUEUE_RABBITMQ_EXCHANGE', '')
