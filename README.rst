@@ -16,8 +16,7 @@ This not supports scheduling with eta or countdown. This is a simple asynchronou
 
 .. _Greenmine: https://github.com/niwibe/Green-Mine
 
-Features
---------
+**Features**
 
 * Simple task declaration
 * Simple configuration and 100% django integrated.
@@ -25,16 +24,14 @@ Features
 * Workos on zeromq push/pull transport mode.
 * RabbitMQ backend support.
 
-
-Work in progress
-----------------
+**TODO**
 
 * Tasks by class.
 * Process pooling.
 
 
 How to use it?
-==============
+--------------
 
 First step, create a module which will define the tasks. I recommend it in the file ``async_tasks.py`` placed in the 
 root of your django app.
