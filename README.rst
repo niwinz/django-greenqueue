@@ -51,9 +51,9 @@ This is a sample example of task::
 **NOTE:** By default, **greenqueue** uses a **sync** backend (no need any worker, all runs on same thread; usefull for test), if need
 , you can run all tasks on separate worker with zeromq backend. 
 
-
+========
 Backends
---------
+========
 
 Currently, three backends are available:
 
@@ -62,9 +62,9 @@ Currently, three backends are available:
 * ``greenqueue.backends.zeromq_gevent.ZMQService`` - Same as above, but spawn tasks in gevent pool. (beta)
 * ``greenqueue.backends.rabbitmq.RabbitMQService`` - Asynchronous backend with RabbitMQ broker.
 
-
+========
 Settings
---------
+========
 
 ``GREENQUEUE_BIND_ADDRESS``
 
@@ -90,7 +90,7 @@ Settings
 
 
 RabbitMQ Settings
-^^^^^^^^^^^^^^^^^
+-----------------
 
 ``GREENQUEUE_RABBITMQ_USERNAME``
 
