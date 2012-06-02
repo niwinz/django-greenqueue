@@ -28,3 +28,17 @@ class BaseService(object):
 
     def send(self, name, args=[], kwargs={}):
         raise NotImplementedError
+
+    def validate_message(self, message):
+        name = None
+        if "name" not in message:
+            return False, name
+        else:
+            name = message['name']
+        if "uuid" not in message:
+            return False, name
+        if "args" not in message:
+            return False, name
+        if "kwargs" not in message:
+            return False, name
+        return True, name

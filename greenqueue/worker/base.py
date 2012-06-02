@@ -23,8 +23,9 @@ def load_modules():
 class BaseWorker(object):
     storage = None
 
-    def __init__(self, queue, stop_event):
-        self.queue = queue
+    def __init__(self, queue_in, queue_out, stop_event):
+        self.queue_in = queue_in
+        self.queue_out = queue_out
         self.stop_event = stop_event
 
     def __call__(self):
@@ -35,15 +36,22 @@ class BaseWorker(object):
         # at the moment tasks only can be functions.
         # on future this can be implemented on Task class.
         return task
+
     def process_callable(self, uuid, _callable, args, kwargs):
         # at the moment process callables in serie.
         result = _callable(*args, **kwargs)
+        
+        # Mark task realized. Usefull for rabbitmq backend.
+        self.set_task_ack(uuid)
 
         # save result to result storag backend.
         self.storage.save(uuid, result)
 
     def _name(self):
         raise NotImplementedError
+
+    def set_task_ack(self, uuid):
+        self.queue_out.put(uuid)
         
     @property
     def name(self):
@@ -75,7 +83,8 @@ class BaseWorker(object):
 class BaseManager(object):
     greenlet = False
     sync = False
-    
+    _ack_callback = lambda x: None
+
     def __init__(self):
         log.info("greenqueue: initializing manager")
 
@@ -96,14 +105,15 @@ class BaseManager(object):
     def _handle_message(self, name, uuid, args, kwargs):
         raise NotImplementedError
 
-    def handle_message(self, message):
-        ok, name = self.validate_message(message)
-        if not ok:
-            log.error("greenqueue: ignoring invalid message")
-            return
-
+    def handle_message(self, name, message):
         args, kwargs, uuid = message['args'], message['kwargs'], message['uuid']
         return self._handle_message(name, uuid, args, kwargs)
+
+    def set_ack_callback(self, callback):
+        self._ack_callback = callback
+
+    def start(self):
+        raise NotImplementedError
 
     def close(self):
         raise NotImplementedError

@@ -23,10 +23,13 @@ log = logging.getLogger('greenqueue')
 class RabbitMQService(BaseService):
     rabbitmq_parameters = None
     channel = None
+    delivery_tags = {}
 
     def __init__(self):
         super(RabbitMQService, self).__init__()
         self.manager = shortcuts.load_worker_class().instance()
+        self.manager.set_ack_callback(self._on_task_finished)
+
         if self.manager.greenlet:
             raise ImproperlyConfigured("RabbitMQ is not compatible with gevent workers.")
 
@@ -53,8 +56,37 @@ class RabbitMQService(BaseService):
         )
 
     def _handle_delivery(self, channel, method_frame, header_frame, body):
-        self.channel.basic_ack(delivery_tag=method_frame.delivery_tag)
-        self.manager.handle_message(pickle.loads(body))
+        message = pickle.loads(body)
+
+        ok, name = self.validate_message(message)
+        if not ok:
+            log.error("greenqueue: ignoring invalid message")
+            self._handle_backend_ack(method_frame.delivery_tag)
+
+            return None
+        
+        self._persist_dt(message['uuid'], method_frame.delivery_tag)
+        self.manager.handle_message(name, message)
+
+    def _on_task_finished(self, uuid):
+        dt = self.delivery_tag.get(uuid, None)
+        if dt is None:
+            log.warning("greenqueue: received uuid without delivery tag.")
+            return None
+
+        self._handle_backend_ack(dt)
+
+    def _handle_backend_ack(self, dt):
+        """
+        Send rabbitmq ack.
+        """
+        self.channel.basic_ack(delivery_tag=dt)
+
+    def _persist_dt(self, uuid, dt):
+        """
+        Persist delivery tag for posterior callback ack.
+        """
+        self.delivery_tag[uuid] = dt
     
     def start(self):
         log.info("greenqueue: initializing service...")
