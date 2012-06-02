@@ -22,6 +22,11 @@ GREENQUEUE_BACKEND = getattr(settings, 'GREENQUEUE_BACKEND', 'greenqueue.backend
 
 GREENQUEUE_WORKER_MANAGER = getattr(settings, 'GREENQUEUE_WORKER_MANAGER', 'greenqueue.worker.sync.SyncManager')
 
+# Result storage.
+
+GREENQUEUE_RESULTS_BACKEND = getattr(settings, "GREENQUEUE_RESULTS_BACKEND", "greenqueue.storage.backends.model.StorageBackend")
+GREENQUEUE_IGNORE_RESULT = getattr(settings, "GREENQUEUE_IGNORE_RESULT", True)
+
 # Worker manager settings.
 
 GREENQUEUE_BACKEND_POOLSIZE = getattr(settings, 'GREENQUEUE_BACKEND_POOLSIZE', 2)
