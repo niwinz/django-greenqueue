@@ -1,12 +1,26 @@
 # -*- coding: utf-8 -*-
 
 from .base import BaseService
+from .. import settings, shortcuts
+from django.core.exceptions import ImproperlyConfigured
+
 
 class SyncService(BaseService):
-    def send(self, name, args=[], kwargs={}):
-        _uuid = self.create_new_uuid()
-        _task = self.lib.task_by_name(name)
+    def __init__(self):
+        super(SyncService, self).__init__()
+        self.manager = shortcuts.load_worker_class().instance()
+        if not self.manager.sync:
+            raise ImproperlyConfigured("Current worker manager is not compatible with this backend.")
 
-        _result = _task(*args, **kwargs)
-        self.storage.save(_uuid, _result)
-        return _uuid
+    def send(self, name, args=[], kwargs={}):
+        new_uuid = self.create_new_uuid()
+        
+        message = {
+            'name': name,
+            'args': args,
+            'kwargs':kwargs,
+            'uuid': new_uuid,
+        }
+
+        self.manager.handle_message(message)
+        return new_uuid

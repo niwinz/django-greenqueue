@@ -35,7 +35,6 @@ class BaseWorker(object):
         # at the moment tasks only can be functions.
         # on future this can be implemented on Task class.
         return task
-
     def process_callable(self, uuid, _callable, args, kwargs):
         # at the moment process callables in serie.
         result = _callable(*args, **kwargs)
@@ -53,6 +52,16 @@ class BaseWorker(object):
         except NotImplementedError:
             return ''
 
+    def _process_task(self, name, uuid, args, kwargs):
+        try:
+            _task = self.lib.task_by_name(name)
+        except ValueError:
+            log.error("greenqueue-worker: received unknown or unregistret method call: %s", name)
+            return 
+
+        task_callable = self.get_callable_for_task(_task)
+        self.process_callable(uuid, task_callable, args, kwargs)
+
     def run(self):
         load_modules()
         self.lib = library
@@ -60,19 +69,12 @@ class BaseWorker(object):
         while not self.stop_event.is_set():
             name, uuid, args, kwargs = self.queue.get(True)
             log.debug("greenqueue-worker{0}: received message from queue - {1}:{2}".format(self.name, name, uuid))
-
-            try:
-                _task = self.lib.task_by_name(name)
-            except ValueError:
-                log.error("greenqueue-worker: received unknown or unregistret method call: %s", name)
-                continue
-
-            task_callable = self.get_callable_for_task(_task)
-            self.process_callable(uuid, task_callable, args, kwargs)
+            self._process_task(name, uuid, args, kwargs)
 
 
 class BaseManager(object):
     greenlet = False
+    sync = False
     
     def __init__(self):
         log.info("greenqueue: initializing manager")
