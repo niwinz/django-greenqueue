@@ -5,12 +5,11 @@ from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings
 
 from ..utils import load_class
+from .. import settings
 
 def get_storage_backend(path=None, **kwargs):
     """
     Load storage backend.
     """
-
-    path = path or getattr(settings, "GREENQUEUE_RESULTS_BACKEND",
-        "greenqueue.storage.backends.model.StorageBackend")
+    path = path or settings.GREENQUEUE_RESULTS_BACKEND
     return load_class(path)(**kwargs)

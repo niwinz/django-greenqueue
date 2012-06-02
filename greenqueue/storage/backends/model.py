@@ -3,7 +3,9 @@
 from django.db import transaction
 from greenqueue.models import TaskResult
 from greenqueue.exceptions import ResultDoesNotExist
+
 from .base import BaseStorageBackend
+from ... import settings
 
 
 try:
@@ -27,6 +29,9 @@ class StorageBackend(BaseStorageBackend):
 
     @transaction.commit_on_success
     def save(self, uuid, value):
+        if settings.GREENQUEUE_IGNORE_RESULT:
+            return
+
         _val = pickle.dumps(value)
         tr = TaskResult.objects.create(uuid=uuid, \
             result=base64.b64encode(_val))
