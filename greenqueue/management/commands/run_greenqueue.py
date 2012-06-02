@@ -12,7 +12,7 @@ import os
 log = logging.getLogger('greenqueue')
 
 from greenqueue import settings as gq_settings
-from greenqueue.core import load_class
+from greenqueue.shortcuts import load_backend_class
 
 class Command(BaseCommand):
     option_list = BaseCommand.option_list + (
@@ -25,8 +25,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         gq_settings.GREENQUEUE_BIND_ADDRESS = options['socket']
-        service_handler = load_class(gq_settings.GREENQUEUE_BACKEND)()
 
+        service_handler = load_backend_class().instance()
         verbosity = int(options.get('verbosity'))
 
         if verbosity > 1:

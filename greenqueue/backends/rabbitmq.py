@@ -8,7 +8,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.utils.importlib import import_module
 
 from .base import BaseService
-from .. import settings
+from .. import settings, shortcuts
 
 from pika.adapters import SelectConnection
 
@@ -24,12 +24,15 @@ class RabbitMQService(BaseService):
     rabbitmq_parameters = None
     channel = None
 
+    def __init__(self):
+        super(RabbitMQService, self).__init__()
+
     def _on_connected(self, _connection):
-        log.info("Connected to RabbitMQ")
+        log.info("greenqueue: connected to RabbitMQ")
         _connection.channel(self._on_channel_opened)
 
     def _on_channel_opened(self, _channel):
-        log.info("Channel opened")
+        log.debug("greenqueue: channel opened")
         self.channel = _channel
         self.channel.queue_declare(
             queue = settings.GREENQUEUE_RABBITMQ_QUEUE,
@@ -40,7 +43,7 @@ class RabbitMQService(BaseService):
         )
 
     def _on_queue_declared(self, frame):
-        log.info("Queue declared (%s)", settings.GREENQUEUE_RABBITMQ_QUEUE)
+        log.debug("greenqueue: queue declared (%s)", settings.GREENQUEUE_RABBITMQ_QUEUE)
         self.channel.basic_consume(
             self._handle_delivery, 
             queue = settings.GREENQUEUE_RABBITMQ_QUEUE,
@@ -48,17 +51,21 @@ class RabbitMQService(BaseService):
 
     def _handle_delivery(self, channel, method_frame, header_frame, body):
         self.channel.basic_ack(delivery_tag=method_frame.delivery_tag)
-        self.handle_message(pickle.loads(body))
+        self.manager.handle_message(pickle.loads(body))
     
     def start(self):
-        self.load_modules()
-        
-        log.info("Starting connection to RabbitMQ.")
+        log.info("greenqueue: initializing service...")
+        self.manager = shortcuts.load_worker_class().instance()
 
-        connection = self.create_async_connection()
-        connection.ioloop.start()
+        log.info("greenqueue: tarting connection to RabbitMQ.")
+        self.connection = self.create_async_connection()
+        self.connection.ioloop.start()
 
     def create_credentials(self):
+        """
+        Create pika friendly credentials object.
+        """
+
         if (settings.GREENQUEUE_RABBITMQ_USERNAME is not None and 
             settings.GREENQUEUE_RABBITMQ_PASSWORD is not None):
 
@@ -70,6 +77,10 @@ class RabbitMQService(BaseService):
         return None
 
     def create_connection_params(self):
+        """
+        Create pika friendly connection parameters object.
+        """
+
         if not self.rabbitmq_parameters:
             creadentials = self.create_credentials()
 

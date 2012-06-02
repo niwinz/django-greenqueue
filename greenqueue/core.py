@@ -8,28 +8,10 @@ from greenqueue.utils import Singleton
 
 from . import settings
 from . import result
+from . import shortcuts
 
 import logging
 log = logging.getLogger('greenqueue')
-
-
-def load_class(path):
-    """
-    Load class from path.
-    """
-
-    try:
-        mod_name, klass_name = path.rsplit('.', 1)
-        mod = import_module(mod_name)
-    except AttributeError as e:
-        raise ImproperlyConfigured(u'Error importing %s: "%s"' % (mod_name, e))
-
-    try:
-        klass = getattr(mod, klass_name)
-    except AttributeError:
-        raise ImproperlyConfigured('Module "%s" does not define a "%s" class' % (mod_name, klass_name))
-
-    return klass
 
 
 class Library(object):
@@ -80,7 +62,7 @@ class Library(object):
     @classmethod
     def send_task(cls, name, args=[], kwargs={}):
         # load main backend
-        backend_class = load_class(settings.GREENQUEUE_BACKEND)
+        backend_class = shortcuts.load_backend_class()
 
         # obtain client instance
         client = backend_class.instance()
