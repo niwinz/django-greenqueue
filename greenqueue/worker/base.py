@@ -72,6 +72,8 @@ class BaseWorker(object):
 
 
 class BaseManager(object):
+    greenlet = False
+    
     def __init__(self):
         log.info("greenqueue: initializing manager")
 

@@ -9,14 +9,20 @@ log = logging.getLogger('greenqueue')
 from greenqueue.utils import Singleton
 
 from .base import BaseService
-from .. import settings
+from .. import settings, shortcuts
 
 
 class ZMQService(BaseService):
     socket = None
 
+    def __init__(self):
+        super(ZMQService, self).__init__()
+        self.manager = shortcuts.load_worker_class().instance()
+
     @property
     def zmq(self):
+        if self.manager.greenlet:
+            return importlib.import_module("gevent_zeromq").zmq
         return import_module('zmq')
 
     def start(self):

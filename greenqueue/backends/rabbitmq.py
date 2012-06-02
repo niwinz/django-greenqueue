@@ -26,6 +26,9 @@ class RabbitMQService(BaseService):
 
     def __init__(self):
         super(RabbitMQService, self).__init__()
+        self.manager = shortcuts.load_worker_class().instance()
+        if self.manager.greenlet:
+            raise ImproperlyConfigured("RabbitMQ is not compatible with gevent workers.")
 
     def _on_connected(self, _connection):
         log.info("greenqueue: connected to RabbitMQ")
@@ -55,7 +58,7 @@ class RabbitMQService(BaseService):
     
     def start(self):
         log.info("greenqueue: initializing service...")
-        self.manager = shortcuts.load_worker_class().instance()
+        self.manager.start()
 
         log.info("greenqueue: tarting connection to RabbitMQ.")
         self.connection = self.create_async_connection()
