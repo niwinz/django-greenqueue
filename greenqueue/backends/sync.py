@@ -22,5 +22,5 @@ class SyncService(BaseService):
             'uuid': new_uuid,
         }
 
-        self.manager.handle_message(message)
+        self.manager.handle_message(name, message)
         return new_uuid

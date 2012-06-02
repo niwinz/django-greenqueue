@@ -51,7 +51,8 @@ class BaseWorker(object):
         raise NotImplementedError
 
     def set_task_ack(self, uuid):
-        self.queue_out.put(uuid)
+        if self.queue_out is not None:
+            self.queue_out.put(uuid)
         
     @property
     def name(self):

@@ -24,7 +24,7 @@ class SyncManager(BaseManager):
 
     def __init__(self):
         super(SyncManager, self).__init__()
-        self.worker = SyncWorker(None, None)
+        self.worker = SyncWorker(None, None, None)
         self.worker()
 
     def _handle_message(self, name, uuid, args, kwargs):
