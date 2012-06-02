@@ -86,7 +86,7 @@ class BaseWorker(object):
 class BaseManager(object):
     greenlet = False
     sync = False
-    _ack_callback = lambda x: None
+    _ack_callback = lambda x, y: None
 
     def __init__(self):
         log.info("greenqueue: initializing manager")

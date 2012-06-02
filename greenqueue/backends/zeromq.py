@@ -59,7 +59,12 @@ class ZMQService(BaseService):
 
         while True:
             message = socket.recv_pyobj()
-            self.manager.handle_message(message)
+            ok, name = self.validate_message(message)
+            if not ok:
+                log.error("greenqueue: ignoring invalid message")
+                continue
+
+            self.manager.handle_message(name, message)
 
     def create_socket(self):
         ctx = self.zmq.Context.instance()

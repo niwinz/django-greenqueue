@@ -69,7 +69,6 @@ class RabbitMQService(BaseService):
         self.manager.handle_message(name, message)
 
     def _on_task_finished(self, uuid):
-        print 1
         dt = self.delivery_tags.get(uuid, None)
         if dt is None:
             log.warning("greenqueue: received uuid without delivery tag.")
