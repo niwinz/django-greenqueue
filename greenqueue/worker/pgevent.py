@@ -3,9 +3,15 @@
 from .base import BaseWorker, BaseManager
 from .. import settings
 
+import gevent
 from gevent import Greenlet
 from gevent.event import Event
 from gevent.queue import Queue
+
+
+import logging
+log = logging.getLogger('greenqueue')
+
 
 
 class Worker(BaseWorker):
@@ -21,7 +27,7 @@ class GreenletManager(BaseManager):
     process_list = []
 
     def __init__(self):
-        super(ProcessManager, self).__init__()
+        super(GreenletManager, self).__init__()
         self.stop_event = Event()
         self.work_queue = Queue(settings.GREENQUEUE_BACKEND_TASKBUFF)
 
@@ -33,7 +39,7 @@ class GreenletManager(BaseManager):
             worker.set_name("greenlet-{0}".format(i))
 
             g = Greenlet.spawn(worker)
-            self.process_list.append(p)
+            self.process_list.append(g)
 
     def start(self):
         self.start_greenlet_pool()

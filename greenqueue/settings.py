@@ -16,6 +16,10 @@ GREENQUEUE_TASK_MODULES = getattr(settings, 'GREENQUEUE_TASK_MODULES', [])
 # By default, sync backend is set.
 
 GREENQUEUE_BACKEND = getattr(settings, 'GREENQUEUE_BACKEND', 'greenqueue.backends.sync.SyncService')
+
+# Available worker managers:
+# * greenqueue.worker.process.ProcessManager
+# * greenqueue.worker.pgevent.GreenletManager
 GREENQUEUE_WORKER_MANAGER = getattr(settings, 'GREENQUEUE_WORKER_MANAGER', 'greenqueue.worker.process.ProcessManager')
 
 # Worker manager settings.
