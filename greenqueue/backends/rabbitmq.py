@@ -69,7 +69,8 @@ class RabbitMQService(BaseService):
         self.manager.handle_message(name, message)
 
     def _on_task_finished(self, uuid):
-        dt = self.delivery_tag.get(uuid, None)
+        print 1
+        dt = self.delivery_tags.get(uuid, None)
         if dt is None:
             log.warning("greenqueue: received uuid without delivery tag.")
             return None
@@ -86,7 +87,7 @@ class RabbitMQService(BaseService):
         """
         Persist delivery tag for posterior callback ack.
         """
-        self.delivery_tag[uuid] = dt
+        self.delivery_tags[uuid] = dt
     
     def start(self):
         log.info("greenqueue: initializing service...")

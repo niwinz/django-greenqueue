@@ -5,7 +5,8 @@ from .base import BaseWorker, BaseManager
 from .. import settings
 
 from multiprocessing import Process, Event, Queue, current_process
-from threading import Thread, Lock()
+from threading import Thread, Lock
+from Queue import Empty
 
 import logging
 log = logging.getLogger('greenqueue')
@@ -15,17 +16,25 @@ class Worker(BaseWorker):
     def _name(self):
         return current_process().name
 
+
 class ACKWatcher(Thread):
     def __init__(self, queue, stop_event, callback):
+        super(ACKWatcher, self).__init__()
+
         self.queue = queue
         self.stop_event = stop_event
-        self.callback
+        self.callback = callback
 
     def run(self):
         while not self.stop_event.is_set():
-            ack_uuid = self.queue.get(True)
-            with Lock():
-                self.callback(ack_uuid)
+            try:
+                ack_uuid = self.queue.get(True, 1)
+                
+                with Lock():
+                    self.callback(ack_uuid)
+
+            except Empty:
+                pass
 
 
 class ProcessManager(BaseManager):
@@ -38,10 +47,13 @@ class ProcessManager(BaseManager):
         self.ack_queue = Queue()
 
     def start(self):
-        self.watcher = ACKWatcher(self.ack_queue, self.stop_event, self._ack_callback)
-        self.watcher.start()
+        try:
+            self.watcher = ACKWatcher(self.ack_queue, self.stop_event, self._ack_callback)
+            self.watcher.start()
 
-        self.start_process_pool()
+            self.start_process_pool()
+        except KeyboardInterrupt:
+            self.stop_event.set()
 
     def start_process_pool(self):
         for i in xrange(settings.GREENQUEUE_BACKEND_POOLSIZE):

@@ -73,11 +73,14 @@ class BaseWorker(object):
     def run(self):
         load_modules()
         self.lib = library
-
+        
         while not self.stop_event.is_set():
-            name, uuid, args, kwargs = self.queue.get(True)
-            log.debug("greenqueue-worker{0}: received message from queue - {1}:{2}".format(self.name, name, uuid))
-            self._process_task(name, uuid, args, kwargs)
+            try:
+                name, uuid, args, kwargs = self.queue_in.get(True)
+                log.debug("greenqueue-worker{0}: received message from queue - {1}:{2}".format(self.name, name, uuid))
+                self._process_task(name, uuid, args, kwargs)
+            except KeyboardInterrupt:
+                self.stop_event.set()
 
 
 class BaseManager(object):
