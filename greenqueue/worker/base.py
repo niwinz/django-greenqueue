@@ -9,6 +9,8 @@ from .. import settings
 import logging
 log = logging.getLogger('greenqueue')
 
+from django.utils.dateparse import parse_datetime
+
 def load_modules():
     """
     Load all modules contained tasks. This method
@@ -92,32 +94,21 @@ class BaseManager(object):
     def __init__(self):
         log.info("greenqueue: initializing manager")
 
-    def validate_message(self, message):
-        name = None
-        if "name" not in message:
-            return False, name
-        else:
-            name = message['name']
-        if "uuid" not in message:
-            return False, name
-        if "args" not in message:
-            return False, name
-        if "kwargs" not in message:
-            return False, name
-        return True, name
-
     def _handle_message(self, name, uuid, args, kwargs):
         raise NotImplementedError
 
     def handle_message(self, name, message):
         args, kwargs, uuid = message['args'], message['kwargs'], message['uuid']
-        return self._handle_message(name, uuid, args, kwargs)
+        return self._handle_message(name, uuid, args, kwargs, message)
 
     def set_ack_callback(self, callback):
         self._ack_callback = callback
 
     def start(self):
         raise NotImplementedError
+
+    def parse_eta(self, eta):
+        return parse_datetime(eta)
 
     def close(self):
         raise NotImplementedError

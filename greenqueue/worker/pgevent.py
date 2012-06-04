@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from .base import BaseWorker, BaseManager
+from ..scheduler.gevent_scheduler import Scheduler
 from .. import settings
 
 import gevent
@@ -13,7 +14,7 @@ from Queue import Empty
 import logging
 log = logging.getLogger('greenqueue')
 
-
+from django.utils.timezone import now
 
 class Worker(BaseWorker):
     def _name(self):
@@ -69,9 +70,22 @@ class GreenletManager(BaseManager):
         self.watcher = ACKWatcher(self.ack_queue, self.stop_event, self._ack_callback)
         self.watcher.start()
 
+        self.scheduler = Scheduler(self.stop_event, self._handle_message)
+        self.scheduler.start()
+
         self.start_greenlet_pool()
 
-    def _handle_message(self, name, uuid, args, kwargs):
+    def _handle_message(self, name, uuid, args, kwargs, message={}):
+        now_date = now()
+
+        if "eta" in message:
+            eta = self.parse_eta(message['eta'])
+
+            if now() < eta:
+                log.debug("greenqueue: task schedulet with eta [%s]", eta.isoformat())
+                self.scheduler.push_task(eta, (name, uuid, args, kwargs))
+                return
+            
         self.work_queue.put((name, uuid, args, kwargs), block=True)
 
     def close(self):

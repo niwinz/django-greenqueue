@@ -11,6 +11,8 @@ from Queue import Empty
 import logging
 log = logging.getLogger('greenqueue')
 
+from django.utils.timezone import now
+
 
 class Worker(BaseWorker):
     def _name(self):
@@ -68,7 +70,16 @@ class ProcessManager(BaseManager):
 
             self.process_list.append(p)
 
-    def _handle_message(self, name, uuid, args, kwargs):
+    def _handle_message(self, name, uuid, args, kwargs, message={}):
+        now_date = now()
+
+        if "eta" in message:
+            eta = self.parse_eta(message['eta'])
+
+            if now < eta:
+                self.scheduler.push_task(eta, (name, uuid, args, kwargs))
+                return
+            
         self.work_queue.put((name, uuid, args, kwargs), block=True)
 
     def close(self):

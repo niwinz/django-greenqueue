@@ -60,7 +60,7 @@ class Library(object):
         return func
 
     @classmethod
-    def send_task(cls, name, args=[], kwargs={}):
+    def send_task(cls, name, args=[], kwargs={}, eta=None, countdown=None):
         # load main backend
         backend_class = shortcuts.load_backend_class()
 
@@ -68,7 +68,7 @@ class Library(object):
         client = backend_class.instance()
 
         # send task to workers
-        uuid = client.send(name, args, kwargs)
+        uuid = client.send(name, args, kwargs, eta=eta, countdown=countdown)
         return result.AsyncResult(uuid)
 
 

@@ -2,8 +2,9 @@
 
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.importlib import import_module
+from django.utils.timezone import now
 
-import logging, os, threading
+import logging, os, threading, datetime
 log = logging.getLogger('greenqueue')
 
 from greenqueue.utils import Singleton
@@ -17,18 +18,8 @@ class ZMQService(BaseService):
 
     def __init__(self):
         super(ZMQService, self).__init__()
-        self.manager = shortcuts.load_worker_class().instance()
-
-    @property
-    def zmq(self):
-        if self.manager.greenlet:
-            return import_module("gevent_zeromq").zmq
-        return import_module('zmq')
 
     def lock(self):
-        if self.manager.greenlet:
-            return
-        
         _lock = getattr(self, '_lock', None)
         if _lock is None:
             _lock = import_module("threading").Lock()
@@ -37,9 +28,6 @@ class ZMQService(BaseService):
         setattr(self, '_lock', _lock)
 
     def unlock(self):
-        if self.manager.greenlet:
-            return 
-
         _lock = getattr(self, '_lock', None)
         if _lock is None:
             raise ImproperlyConfigured("Can not release now created lock")
@@ -47,9 +35,17 @@ class ZMQService(BaseService):
         _lock.release()
 
     def start(self):
+        self.manager = shortcuts.load_worker_class().instance()
+        if self.manager.greenlet:
+            zmq = import_module("gevent_zeromq").zmq
+        else:
+            zmq = import_module('zmq')
+
         self.manager.start()
-        ctx = self.zmq.Context.instance()
-        socket = ctx.socket(self.zmq.PULL)
+
+        ctx = zmq.Context.instance()
+
+        socket = ctx.socket(zmq.PULL)
         socket.connect(settings.GREENQUEUE_BIND_ADDRESS)
         
         log.info(u"greenqueue: now connected to {address}. (pid {pid})".format(
@@ -67,22 +63,32 @@ class ZMQService(BaseService):
             self.manager.handle_message(name, message)
 
     def create_socket(self):
-        ctx = self.zmq.Context.instance()
-        self.socket = ctx.socket(self.zmq.PUSH)
+        zmq = import_module('zmq')
+        ctx = zmq.Context.instance()
+
+        self.socket = ctx.socket(zmq.PUSH)
         self.socket.bind(settings.GREENQUEUE_BIND_ADDRESS)
 
-    def send(self, name, args=[], kwargs={}):
+    def send(self, name, args=[], kwargs={}, eta=None, countdown=None):
         new_uuid = self.create_new_uuid()
 
         self.lock()
         if self.socket is None:
             self.create_socket()
         
-        self.socket.send_pyobj({
+        message_object = {
             'name': name, 
             'args': args, 
             'kwargs':kwargs,
             'uuid': new_uuid,
-        })
+        }
+
+        if eta is not None:
+            message_object['eta'] = eta.isoformat()
+        elif countdown is not None:
+            eta = now() + datetime.timedelta(seconds=countdown)
+            message_object['eta'] = eta.isoformat()
+        
+        self.socket.send_pyobj(message_object)
         self.unlock()
         return new_uuid
