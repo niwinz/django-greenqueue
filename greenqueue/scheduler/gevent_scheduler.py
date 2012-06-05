@@ -1,37 +1,22 @@
 # -*- coding: utf-8 -*-
 
-from django.utils.timezone import now
-from django.utils.dateparse import parse_datetime
 from gevent import Greenlet
 from gevent import sleep
 
-import heapq
+from .base import SchedulerMixin
 
 
-class Scheduler(Greenlet):
-    sched_list = []
-    callback = None
+class Scheduler(SchedulerMixin, Greenlet):
+    """
+    Gevent scheduler. Only replaces the sleep method for correct
+    context switching.
+    """
 
-    def __init__(self, stop_event, callback):
-        self.stop_event = stop_event
-        self.callback = callback
-        super(Scheduler, self).__init__()
+    def sleep(self, seconds):
+        sleep(seconds)
 
-    def push_task(self, eta, task):
-        heapq.heappush(self.sched_list, (eta, task))
-        sleep(0) # explicit context switch
+    def return_callback(self, *args):
+        return self.callback(*args)
 
     def _run(self):
-        while not self.stop_event.is_set():
-            try:
-                eta, task = heapq.heappop(self.sched_list)
-            except IndexError:
-                sleep(1)
-                continue
-
-            now_dt = now()
-
-            if now_dt < eta:
-                sleep((eta-now_dt).seconds)
-            
-            self.callback(*task)
+        self.start_loop()
