@@ -1,3 +1,5 @@
+.. django-greenqueue documentation master file, created by
+
 =================
 django-greenqueue
 =================
@@ -61,7 +63,7 @@ Currently, three backends are available:
 
 
 Workers:
-........
+--------
 
 Currently, there are three worker types. Keep in mind that not all the workers you are supported by all backends.
 
@@ -174,4 +176,3 @@ License
 -------
 
 BSD License. You can see full license text on LICENSE file.
-
