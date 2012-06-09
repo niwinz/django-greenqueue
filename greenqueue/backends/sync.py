@@ -13,7 +13,7 @@ class SyncService(BaseService):
             raise ImproperlyConfigured("Current worker manager is not compatible with this backend.")
 
 
-    def send(self, name, args=[], kwargs={}):
+    def send(self, name, args=[], kwargs={}, eta=None, countdown=None):
         new_uuid = self.create_new_uuid()
         
         message = {

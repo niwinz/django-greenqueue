@@ -27,7 +27,7 @@ class SyncManager(BaseManager):
         self.worker = SyncWorker(None, None, None)
         self.worker()
 
-    def _handle_message(self, name, uuid, args, kwargs):
+    def _handle_message(self, name, uuid, args, kwargs, message):
         self.worker.put_task(name, uuid, args, kwargs)
 
     def close(self):
