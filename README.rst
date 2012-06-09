@@ -21,13 +21,15 @@ This not supports scheduling with eta or countdown. This is a simple asynchronou
 * Simple task declaration
 * Simple configuration and 100% django integrated.
 * Backend for testing mode.
-* Workos on zeromq push/pull transport mode.
-* RabbitMQ backend support.
+* ZeroMQ backend push/pull transport mode.
+* RabbitMQ backend with durable tasks.
+* Pluggable workers.
+* Pluggable storage backends. (need improvements)
+* Countdown / eta scheduling.
 
 **TODO**
 
 * Tasks by class.
-* Process pooling.
 
 
 How to use it?
@@ -57,8 +59,17 @@ Currently, three backends are available:
 
 * ``greenqueue.backends.sync.SyncService`` - Synchronous backend, no worker need.
 * ``greenqueue.backends.zeromq.ZMQService`` - Asynchronous backend with zeromq transport.
-* ``greenqueue.backends.zeromq_gevent.ZMQService`` - Same as above, but spawn tasks in gevent pool. (beta)
 * ``greenqueue.backends.rabbitmq.RabbitMQService`` - Asynchronous backend with RabbitMQ broker.
+
+
+Workers:
+........
+
+Currently, there are three worker types. Keep in mind that not all the workers you are supported by all backends.
+
+* ``greenqueue.worker.sync.SyncManager`` - Sync worker. Only works with sync backend. Usefull for testing.
+* ``greenqueue.worker.process.ProcessManager`` - Process pool worker managager. Compatible with (zeromq and rabbitmq backends)
+* ``greenqueue.worker.pgevent.GreenletManager`` - Greenlet on top of gevent worker manager. Compatible only with zeromq backend.
 
 
 General settings
@@ -78,13 +89,19 @@ General settings
     Task dispatches and service backend. By default is set ``greenqueue.backends.sync.SyncService``, this is usefull
     for tests, because this does not need any worker.
 
-    For use zeromq and separate worker for task, set this attr to ``greenqueue.backends.zeromq.ZMQService`` or 
-    ``greenqueue.backends.zeromq_gevent.ZMQService``
+    For use zeromq and separate worker for task, set this attr to ``greenqueue.backends.zeromq.ZMQService``.
+
+``GREENQUEUE_WORKER_MANAGER``
+
+    Set a apropiate worker manager for selected backend. NOTE: not all backends supports all workers.
 
 ``GREENQUEUE_BACKEND_POOLSIZE``
 
-    Set a process pool size. At the momment, this settings property is used only with ``zeromq_gevent.ZMQService``
-    backend.
+    Set a process pool size. (default: 2)
+
+``GREENQUEUE_IGNORE_RESULT``
+    
+    Ignore results of tasks.
 
 
 RabbitMQ Settings
@@ -145,6 +162,7 @@ you need to know the name of the task. Example::
     aresult = send_task('sum', args=[2,3])
     result = aresult.wait()
 
+We can specify a countdown or eta like celery with ``countdown`` or ``eta`` parameter.
 
 How to install?
 ---------------
