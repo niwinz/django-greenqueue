@@ -42,7 +42,7 @@ class BaseWorker(object):
     def process_callable(self, uuid, _callable, args, kwargs):
         # at the moment process callables in serie.
         result = _callable(*args, **kwargs)
-        
+
         # Mark task realized. Usefull for rabbitmq backend.
         self.set_task_ack(uuid)
 
@@ -55,7 +55,7 @@ class BaseWorker(object):
     def set_task_ack(self, uuid):
         if self.queue_out is not None:
             self.queue_out.put(uuid)
-        
+
     @property
     def name(self):
         try:
@@ -68,7 +68,7 @@ class BaseWorker(object):
             _task = self.lib.task_by_name(name)
         except ValueError:
             log.error("greenqueue-worker: received unknown or unregistret method call: %s", name)
-            return 
+            return
 
         task_callable = self.get_callable_for_task(_task)
         self.process_callable(uuid, task_callable, args, kwargs)
@@ -76,7 +76,7 @@ class BaseWorker(object):
     def run(self):
         load_modules()
         self.lib = library
-        
+
         while not self.stop_event.is_set():
             try:
                 name, uuid, args, kwargs = self.queue_in.get(True)

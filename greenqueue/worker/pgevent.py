@@ -85,7 +85,7 @@ class GreenletManager(BaseManager):
                 log.debug("greenqueue: task schedulet with eta [%s]", eta.isoformat())
                 self.scheduler.push_task(eta, (name, uuid, args, kwargs))
                 return
-            
+
         self.work_queue.put((name, uuid, args, kwargs), block=True)
 
     def close(self):

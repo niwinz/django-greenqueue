@@ -32,7 +32,7 @@ class ACKWatcher(Thread):
         while not self.stop_event.is_set():
             try:
                 ack_uuid = self.queue.get(True, 1)
-                
+
                 with Lock():
                     self.callback(ack_uuid)
 
@@ -64,7 +64,7 @@ class ProcessManager(BaseManager):
     def start_process_pool(self):
         for i in xrange(settings.GREENQUEUE_BACKEND_POOLSIZE):
             log.info("greenqueue: starting worker process {0}".format(i))
-            
+
             # Create worker instance.
             w = Worker(self.work_queue, self.ack_queue, self.stop_event)
 
@@ -82,7 +82,7 @@ class ProcessManager(BaseManager):
                 log.debug("greenqueue: task schedulet with eta [%s]", eta.isoformat())
                 self.scheduler.push_task(eta, (name, uuid, args, kwargs))
                 return
-            
+
         self.work_queue.put((name, uuid, args, kwargs), block=True)
 
     def close(self):
