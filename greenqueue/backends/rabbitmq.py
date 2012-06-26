@@ -6,6 +6,7 @@ This module is not fully implemented.
 
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.importlib import import_module
+from django.utils.timezone import now
 
 from .base import BaseService
 from .. import settings, shortcuts
@@ -13,6 +14,7 @@ from .. import settings, shortcuts
 from pika.adapters import SelectConnection
 
 import logging
+import datetime
 import pickle
 import pika
 import os
@@ -43,7 +45,7 @@ class RabbitMQService(BaseService):
         self.channel.queue_declare(
             queue = settings.GREENQUEUE_RABBITMQ_QUEUE,
             durable = True,
-            exclusive = False, 
+            exclusive = False,
             auto_delete = False,
             callback = self._on_queue_declared
         )
@@ -51,7 +53,7 @@ class RabbitMQService(BaseService):
     def _on_queue_declared(self, frame):
         log.debug("greenqueue: queue declared (%s)", settings.GREENQUEUE_RABBITMQ_QUEUE)
         self.channel.basic_consume(
-            self._handle_delivery, 
+            self._handle_delivery,
             queue = settings.GREENQUEUE_RABBITMQ_QUEUE,
         )
 
@@ -64,7 +66,7 @@ class RabbitMQService(BaseService):
             self._handle_backend_ack(method_frame.delivery_tag)
 
             return None
-        
+
         self._persist_dt(message['uuid'], method_frame.delivery_tag)
         self.manager.handle_message(name, message)
 
@@ -87,7 +89,7 @@ class RabbitMQService(BaseService):
         Persist delivery tag for posterior callback ack.
         """
         self.delivery_tags[uuid] = dt
-    
+
     def start(self):
         log.info("greenqueue: initializing service...")
         self.manager.start()
@@ -101,7 +103,7 @@ class RabbitMQService(BaseService):
         Create pika friendly credentials object.
         """
 
-        if (settings.GREENQUEUE_RABBITMQ_USERNAME is not None and 
+        if (settings.GREENQUEUE_RABBITMQ_USERNAME is not None and
             settings.GREENQUEUE_RABBITMQ_PASSWORD is not None):
 
             return pika.PlainCredentials(
@@ -121,13 +123,13 @@ class RabbitMQService(BaseService):
 
             params = {
                 'host': settings.GREENQUEUE_RABBITMQ_HOSTNAME,
-                'port': settings.GREENQUEUE_RABBITMQ_PORT, 
+                'port': settings.GREENQUEUE_RABBITMQ_PORT,
                 'virtual_host': settings.GREENQUEUE_RABBITMQ_VHOST,
             }
 
             if creadentials:
                 params['credentials'] = creadentials
-            
+
             self.rabbitmq_parameters = pika.ConnectionParameters(**params)
 
         return self.rabbitmq_parameters
@@ -138,28 +140,36 @@ class RabbitMQService(BaseService):
     def create_async_connection(self):
         return SelectConnection(self.create_connection_params(), self._on_connected)
 
-    def send(self, name, args=[], kwargs={}):
+    def send(self, name, args=[], kwargs={}, eta=None, countdown=None):
         connection = self.create_blocking_connection()
         channel = connection.channel()
         new_uuid = self.create_new_uuid()
 
         channel.queue_declare(
-            queue = settings.GREENQUEUE_RABBITMQ_QUEUE, 
+            queue = settings.GREENQUEUE_RABBITMQ_QUEUE,
             durable = True,
-            exclusive = False, 
+            exclusive = False,
             auto_delete = False
         )
+
         message = {
-            'name': name, 
-            'args': args, 
+            'name': name,
+            'args': args,
             'kwargs':kwargs,
             'uuid': new_uuid,
         }
+
+        if eta is not None:
+            message_object['eta'] = eta.isoformat()
+        elif countdown is not None:
+            eta = now() + datetime.timedelta(seconds=countdown)
+            message_object['eta'] = eta.isoformat()
 
         channel.basic_publish(
             exchange = settings.GREENQUEUE_RABBITMQ_EXCHANGE,
             routing_key = settings.GREENQUEUE_RABBITMQ_ROUTING_KEY,
             body = pickle.dumps(message, -1),
         )
+
         connection.close()
         return new_uuid

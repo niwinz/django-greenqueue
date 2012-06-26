@@ -13,6 +13,7 @@ from .base import BaseService
 from .. import settings, shortcuts
 
 
+
 class ZMQService(BaseService):
     socket = None
 
@@ -31,7 +32,7 @@ class ZMQService(BaseService):
         _lock = getattr(self, '_lock', None)
         if _lock is None:
             raise ImproperlyConfigured("Can not release now created lock")
-        
+
         _lock.release()
 
     def start(self):
@@ -47,9 +48,9 @@ class ZMQService(BaseService):
 
         socket = ctx.socket(zmq.PULL)
         socket.connect(settings.GREENQUEUE_BIND_ADDRESS)
-        
+
         log.info(u"greenqueue: now connected to {address}. (pid {pid})".format(
-            address = settings.GREENQUEUE_BIND_ADDRESS, 
+            address = settings.GREENQUEUE_BIND_ADDRESS,
             pid = os.getpid()
         ))
 
@@ -75,10 +76,10 @@ class ZMQService(BaseService):
         self.lock()
         if self.socket is None:
             self.create_socket()
-        
+
         message_object = {
-            'name': name, 
-            'args': args, 
+            'name': name,
+            'args': args,
             'kwargs':kwargs,
             'uuid': new_uuid,
         }
@@ -88,7 +89,7 @@ class ZMQService(BaseService):
         elif countdown is not None:
             eta = now() + datetime.timedelta(seconds=countdown)
             message_object['eta'] = eta.isoformat()
-        
+
         self.socket.send_pyobj(message_object)
         self.unlock()
         return new_uuid
