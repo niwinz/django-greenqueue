@@ -160,10 +160,10 @@ class RabbitMQService(BaseService):
         }
 
         if eta is not None:
-            message_object['eta'] = eta.isoformat()
+            message['eta'] = eta.isoformat()
         elif countdown is not None:
             eta = now() + datetime.timedelta(seconds=countdown)
-            message_object['eta'] = eta.isoformat()
+            message['eta'] = eta.isoformat()
 
         channel.basic_publish(
             exchange = settings.GREENQUEUE_RABBITMQ_EXCHANGE,

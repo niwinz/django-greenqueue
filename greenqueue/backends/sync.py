@@ -15,7 +15,7 @@ class SyncService(BaseService):
 
     def send(self, name, args=[], kwargs={}, eta=None, countdown=None):
         new_uuid = self.create_new_uuid()
-        
+
         message = {
             'name': name,
             'args': args,
