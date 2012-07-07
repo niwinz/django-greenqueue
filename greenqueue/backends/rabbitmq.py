@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""
-This module is not fully implemented.
-"""
+from __future__ import absolute_import
 
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.importlib import import_module
@@ -30,10 +28,10 @@ class RabbitMQService(BaseService):
     def __init__(self):
         super(RabbitMQService, self).__init__()
         self.manager = shortcuts.load_worker_class().instance()
-        self.manager.set_ack_callback(self._on_task_finished)
-
         if self.manager.greenlet:
             raise ImproperlyConfigured("RabbitMQ is not compatible with gevent workers.")
+
+        self.manager.set_ack_callback(self._on_task_finished)
 
     def _on_connected(self, _connection):
         log.info("greenqueue: connected to RabbitMQ")

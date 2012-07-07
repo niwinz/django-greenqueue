@@ -26,7 +26,7 @@ class BaseService(object):
     def create_new_uuid(self):
         return str(uuid.uuid1())
 
-    def send(self, name, args=[], kwargs={}):
+    def send(self, name, args=[], kwargs={}, eta=None, countdown=None):
         raise NotImplementedError
 
     def validate_message(self, message):
