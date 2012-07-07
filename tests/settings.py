@@ -20,7 +20,7 @@ DATABASES = {
 }
 
 SECRET_KEY = "django_tests_secret_key"
-# To speed up tests under SQLite we use the MD5 hasher as the default one. 
+# To speed up tests under SQLite we use the MD5 hasher as the default one.
 # This should not be needed under other databases, as the relative speedup
 # is only marginal there.
 PASSWORD_HASHERS = (
@@ -34,3 +34,4 @@ INSTALLED_APPS = [
 GREENQUEUE_TASK_MODULES = ['greenqueue.tests.async_tasks']
 
 GREENQUEUE_BACKEND = 'greenqueue.backends.zeromq.ZMQService'
+GREENQUEUE_WORKER_MANAGER='greenqueue.worker.process.ProcessManager'
