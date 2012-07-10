@@ -20,7 +20,6 @@ setup(
     ],
     setup_requires = [
         'versiontools >= 1.9',
-        'pika >= 0.9.5',
     ],
     classifiers = [
         'Framework :: Django',
