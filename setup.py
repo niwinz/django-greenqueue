@@ -15,6 +15,9 @@ setup(
     include_package_data = False,
     packages = find_packages(),
     zip_safe = False,
+    install_requires=[
+        'distribute',
+    ],
     setup_requires = [
         'versiontools >= 1.9',
         'pika >= 0.9.5',
